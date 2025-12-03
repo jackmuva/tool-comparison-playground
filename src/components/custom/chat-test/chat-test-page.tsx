@@ -10,7 +10,6 @@ export default async function ChatTestPage({
 	user: UserInfo
 }) {
 	const harnessConfig: HarnessConfig | null = await getHarnessConfig(user.user.email);
-	console.log("harness: ", harnessConfig);
 	return (
 		<div className="w-dvw h-dvh bg-background">
 			<Navbar user={user} />

@@ -17,7 +17,7 @@ export function Chat({
 
 	return (
 		<div className="pt-16">
-			{setupModal && <HarnessSetup />}
+			{setupModal && <HarnessSetup toggle={() => setSetupModal(false)} />}
 		</div>
 	);
 }
