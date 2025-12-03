@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1764789453148,
+      "tag": "0000_cynical_toad_men",
+      "breakpoints": true
+    }
+  ]
+}
