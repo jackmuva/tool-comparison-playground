@@ -1,16 +1,93 @@
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
-import { ToolConfig } from "@/src/types/types";
 import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/components/ui/tabs";
-import { CirclePlus, CirclePower, Squircle } from "lucide-react";
+import { CirclePlus, Wrench } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select"
 
 enum ProviderType {
 	ACTIONKIT = "ActionKit",
 	COMPOSIO = "Composio",
 	MCP = "MCP",
 }
+
+const ACTIONKIT_NOTION_TOOLS = [
+	"NOTION_CREATE_PAGE",
+	"NOTION_UPDATE_PAGE",
+	"NOTION_GET_PAGE_BY_ID",
+	"NOTION_ARCHIVE_PAGE",
+	"NOTION_SEARCH_PAGES",
+	"NOTION_GET_PAGE_CONTENT",
+	"NOTION_UPDATE_BLOCK",
+	"NOTION_GET_BLOCK_BY_ID",
+	"NOTION_DELETE_BLOCK",
+	"NOTION_GET_PAGE_AS_MARKDOWN",
+	"NOTION_CREATE_PAGE_WITH_MARKDOWN",
+	"NOTION_UPDATE_PAGE_WITH_MARKDOWN",
+];
+
+const COMPOSIO_NOTION_TOOLS = [
+	"NOTION_ADD_MULTIPLE_PAGE_CONTENT",
+	"NOTION_ADD_PAGE_CONTENT",
+	"NOTION_APPEND_BLOCK_CHILDREN",
+	"NOTION_ARCHIVE_NOTION_PAGE",
+	"NOTION_CREATE_COMMENT",
+	"NOTION_CREATE_DATABASE",
+	"NOTION_CREATE_FILE_UPLOAD",
+	"NOTION_CREATE_NOTION_PAGE",
+	"NOTION_DELETE_BLOCK",
+	"NOTION_DUPLICATE_PAGE",
+	"NOTION_FETCH_ALL_BLOCK_CONTENTS",
+	"NOTION_FETCH_BLOCK_CONTENTS",
+	"NOTION_FETCH_BLOCK_METADATA",
+	"NOTION_FETCH_COMMENTS",
+	"NOTION_FETCH_DATA",
+	"NOTION_FETCH_DATABASE",
+	"NOTION_FETCH_ROW",
+	"NOTION_GET_ABOUT_ME",
+	"NOTION_GET_ABOUT_USER",
+	"NOTION_GET_PAGE_PROPERTY_ACTION",
+	"NOTION_INSERT_ROW_DATABASE",
+	"NOTION_LIST_DATA_SOURCE_TEMPLATES",
+	"NOTION_LIST_USERS",
+	"NOTION_QUERY_DATABASE",
+	"NOTION_QUERY_DATABASE_WITH_FILTER",
+	"NOTION_QUERY_DATA_SOURCE",
+	"NOTION_RETRIEVE_COMMENT",
+	"NOTION_RETRIEVE_DATABASE_PROPERTY",
+	"NOTION_SEARCH_NOTION_PAGE",
+	"NOTION_UPDATE_BLOCK",
+	"NOTION_UPDATE_PAGE",
+	"NOTION_UPDATE_ROW_DATABASE",
+	"NOTION_UPDATE_SCHEMA_DATABASE",
+];
+
+const MCP_NOTION_TOOLS = [
+	"notion-search",
+	"notion-fetch",
+	"notion-create-pages",
+	"notion-update-page",
+	"notion-move-pages",
+	"notion-duplicate-page",
+	"notion-create-database",
+	"notion-update-database",
+	"notion-query-data-sources",
+	"notion-create-comment",
+	"notion-get-comments",
+	"notion-get-teams",
+	"notion-get-users",
+	"notion-get-user",
+	"notion-get-self",
+];
 
 export function HarnessSetup({
 	toggle,
@@ -34,6 +111,22 @@ export function HarnessSetup({
 			<h1 className="font-bold text-xl">
 				Harrness Setup
 			</h1>
+			<h2 className="font-semibold">
+				Model:
+			</h2>
+			<Select>
+				<SelectTrigger className="w-[180px]">
+					<SelectValue placeholder="Select a model" />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectGroup>
+						<SelectLabel>Models</SelectLabel>
+						<SelectItem value="google/gemini-2.5-flash">gemini-2.5-flash</SelectItem>
+						<SelectItem value="anthropic/claude-haiku-4.5">claude-haiku-4.5</SelectItem>
+						<SelectItem value="openai/gpt-5-mini">gpt-5-mini</SelectItem>
+					</SelectGroup>
+				</SelectContent>
+			</Select>
 			<h2 className="font-semibold">
 				System Prompt:
 			</h2>
@@ -80,9 +173,28 @@ export function HarnessSetup({
 							})}
 						</TabsList>
 						{Object.keys(provider).filter((prov) => provider[prov]).map((prov) => {
+							let tools: string[] = [];
+							if (prov === ProviderType.ACTIONKIT) tools = ACTIONKIT_NOTION_TOOLS;
+							if (prov === ProviderType.COMPOSIO) tools = COMPOSIO_NOTION_TOOLS;
+							if (prov === ProviderType.MCP) tools = MCP_NOTION_TOOLS;
+
 							return (
 								<TabsContent value={prov} key={prov}>
-									<div className="rounded-md bg-muted p-4">
+									<div className="rounded-md bg-muted p-4 grid grid-cols-2 overflow-y-auto
+										h-36 gap-2">
+										{tools.map((tool) => {
+											return (
+												<Toggle size="sm"
+													variant="outline"
+													className="data-[state=on]:bg-green-100 flex gap-1"
+													onClick={() => { }}>
+													<Wrench />
+													<div className="overflow-x-hidden">
+														{tool}
+													</div>
+												</Toggle>
+											);
+										})}
 									</div>
 								</TabsContent>
 							);
