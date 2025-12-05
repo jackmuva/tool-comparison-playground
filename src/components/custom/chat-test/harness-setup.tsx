@@ -99,22 +99,45 @@ export function HarnessSetup({
 		Composio: false,
 		MCP: false,
 	});
+	const [tools, setTools] = useState<{ [provider: string]: Set<string> }>({
+		ActionKit: new Set(),
+		Composio: new Set(),
+		MCP: new Set(),
+	});
+	const [selectedModel, setSelectedModel] = useState<string>("");
+	const [systemPrompt, setSystemPrompt] = useState<string>("");
 
 	const toggleProvider = (providerType: ProviderType) => {
+		setTools((prev) => ({
+			...prev,
+			[providerType]: new Set(),
+		}));
+
 		setProvider((prev) => ({ ...prev, [providerType]: !prev[providerType] }));
+	}
+
+	const toggleTool = (provider: string, toolName: string) => {
+		const newTools = { ...tools };
+		newTools[provider].has(toolName) ? newTools[provider].delete(toolName) : newTools[provider].add(toolName);
+		setTools(newTools);
+	}
+
+	const finishSetup = () => {
+		console.log(tools);
+		toggle();
 	}
 
 	return (
 		<div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
 			max-h-3/4 h-[600px] w-[700px] max-w-11/12 shadow-2xl rounded-2xl bg-background border
-			flex flex-col p-4 gap-2">
+			flex flex-col p-4 gap-2 overflow-y-auto">
 			<h1 className="font-bold text-xl">
 				Harrness Setup
 			</h1>
 			<h2 className="font-semibold">
 				Model:
 			</h2>
-			<Select>
+			<Select value={selectedModel} onValueChange={setSelectedModel}>
 				<SelectTrigger className="w-[180px]">
 					<SelectValue placeholder="Select a model" />
 				</SelectTrigger>
@@ -130,7 +153,11 @@ export function HarnessSetup({
 			<h2 className="font-semibold">
 				System Prompt:
 			</h2>
-			<Textarea placeholder="System prompt for your Notion agent" />
+			<Textarea
+				placeholder="System prompt for your Notion agent"
+				value={systemPrompt}
+				onChange={(e) => setSystemPrompt(e.target.value)}
+			/>
 			<h2 className="font-semibold">
 				Tool Providers:
 			</h2>
@@ -173,21 +200,23 @@ export function HarnessSetup({
 							})}
 						</TabsList>
 						{Object.keys(provider).filter((prov) => provider[prov]).map((prov) => {
-							let tools: string[] = [];
-							if (prov === ProviderType.ACTIONKIT) tools = ACTIONKIT_NOTION_TOOLS;
-							if (prov === ProviderType.COMPOSIO) tools = COMPOSIO_NOTION_TOOLS;
-							if (prov === ProviderType.MCP) tools = MCP_NOTION_TOOLS;
+							let toolNames: string[] = [];
+							if (prov === ProviderType.ACTIONKIT) toolNames = ACTIONKIT_NOTION_TOOLS;
+							if (prov === ProviderType.COMPOSIO) toolNames = COMPOSIO_NOTION_TOOLS;
+							if (prov === ProviderType.MCP) toolNames = MCP_NOTION_TOOLS;
 
 							return (
 								<TabsContent value={prov} key={prov}>
 									<div className="rounded-md bg-muted p-4 grid grid-cols-2 overflow-y-auto
 										h-36 gap-2">
-										{tools.map((tool) => {
+										{toolNames.map((tool) => {
 											return (
-												<Toggle size="sm"
+												<Toggle key={tool}
+													size="sm"
 													variant="outline"
 													className="data-[state=on]:bg-green-100 flex gap-1"
-													onClick={() => { }}>
+													pressed={tools[prov].has(tool)}
+													onClick={() => toggleTool(prov, tool)}>
 													<Wrench />
 													<div className="overflow-x-hidden">
 														{tool}
@@ -202,8 +231,8 @@ export function HarnessSetup({
 					</Tabs>
 				</>
 			}
-			<Button className="absolute bottom-4"
-				onClick={() => toggle()}>
+			<Button className="w-20"
+				onClick={() => finishSetup()}>
 				Finished
 			</Button>
 		</div>
