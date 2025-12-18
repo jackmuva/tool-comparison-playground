@@ -4,12 +4,13 @@ import {
 	withAuth,
 } from '@workos-inc/authkit-nextjs';
 import ChatTestPage from '../components/custom/chat-test/chat-test-page';
+import { userWithToken } from '../lib/auth';
 
 export default async function HomePage() {
-	const user = await withAuth();
+	const user = await userWithToken();
 	const signUpUrl = await getSignUpUrl();
 
-	if (!user.user) {
+	if (!user.userInfo) {
 		return (
 			<div>
 				<a href="/login">Sign in</a>

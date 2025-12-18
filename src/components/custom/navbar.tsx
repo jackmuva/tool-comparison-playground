@@ -3,9 +3,9 @@ import { UserInfo, signOut } from "@workos-inc/authkit-nextjs";
 import { Hammer } from "lucide-react";
 
 export default async function Navbar({
-	user
+	userInfo
 }: {
-	user: UserInfo
+	userInfo: UserInfo
 }) {
 	return (
 		<div className="absolute left-0 top-0 border-b h-16 flex w-full items-center px-4 justify-between">

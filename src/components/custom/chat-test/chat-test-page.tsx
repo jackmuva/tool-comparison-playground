@@ -9,13 +9,13 @@ import { Chat } from "./chat";
 export default async function ChatTestPage({
 	user
 }: {
-	user: UserInfo
+	user: { userInfo: UserInfo, paragonUserToken: string }
 }) {
-	const harnessConfig: HarnessConfig | null = await getHarnessConfig(user.user.email);
+	const harnessConfig: HarnessConfig | null = await getHarnessConfig(user.userInfo.user.email);
 	return (
 		<div className="w-dvw h-dvh bg-background">
-			<Navbar user={user} />
-			<Chat harnessConfig={harnessConfig} />
+			<Navbar userInfo={user.userInfo} />
+			<Chat harnessConfig={harnessConfig} user={user} />
 		</div>
 	);
 }

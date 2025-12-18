@@ -174,7 +174,7 @@ export function HarnessSetup({
 		<div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
 			max-h-3/4 h-[600px] w-[700px] max-w-11/12 shadow-2xl rounded-2xl bg-background border
 			flex flex-col justify-between p-4 gap-2 overflow-y-auto">
-			<div>
+			<div className="flex flex-col gap-2">
 				<h1 className="font-bold text-xl">
 					Harrness Setup
 				</h1>
