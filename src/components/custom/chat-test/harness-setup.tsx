@@ -2,7 +2,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/components/ui/tabs";
 import { CirclePlus, Wrench } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Select,
@@ -13,6 +13,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
+import { useTestingStore } from "@/src/store/testing-store";
+import { HarnessConfig } from "@/src/db/schema";
 
 enum ProviderType {
 	ACTIONKIT = "ActionKit",
@@ -91,8 +93,10 @@ const MCP_NOTION_TOOLS = [
 
 export function HarnessSetup({
 	toggle,
+	config,
 }: {
 	toggle: () => void,
+	config: null | HarnessConfig,
 }) {
 	const [provider, setProvider] = useState<{ [provider: string]: boolean }>({
 		ActionKit: false,
@@ -106,6 +110,26 @@ export function HarnessSetup({
 	});
 	const [selectedModel, setSelectedModel] = useState<string>("");
 	const [systemPrompt, setSystemPrompt] = useState<string>("");
+	const setConfig = useTestingStore((state) => state.setConfig);
+
+	useEffect(() => {
+		if (config) {
+			setSelectedModel(config.model ?? "");
+			setSystemPrompt(config.systemPrompt ?? "");
+
+			const newTools = { ...tools };
+			const newProvider = { ...provider }
+			for (const prov of Object.keys(config.tools ?? {})) {
+				console.log("prov: ", config.tools![prov]);
+				newProvider[prov] = config.tools![prov].length > 0 ? true : false;
+				for (const toolName of config.tools![prov]) {
+					newTools[prov].add(toolName);
+				}
+			}
+			setProvider(newProvider);
+			setTools(newTools);
+		}
+	}, [config]);
 
 	const toggleProvider = (providerType: ProviderType) => {
 		setTools((prev) => ({
@@ -122,119 +146,149 @@ export function HarnessSetup({
 		setTools(newTools);
 	}
 
-	const finishSetup = () => {
-		console.log(tools);
-		toggle();
+	const finishSetup = async () => {
+		const toolList: { [provider: string]: string[] } = {};
+		for (const prov of Object.keys(tools)) {
+			toolList[prov] = Array.from(tools[prov]);
+		}
+
+		const res: Response = await fetch(`${window.document.location.origin}/api/setup`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				tools: toolList,
+				model: selectedModel,
+				systemPrompt: systemPrompt,
+			}),
+		});
+		if (res.ok) {
+			const saved = await res.json();
+			if (saved.config) {
+				setConfig(saved.config);
+				toggle();
+			}
+		}
 	}
 
 	return (
 		<div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
 			max-h-3/4 h-[600px] w-[700px] max-w-11/12 shadow-2xl rounded-2xl bg-background border
-			flex flex-col p-4 gap-2 overflow-y-auto">
-			<h1 className="font-bold text-xl">
-				Harrness Setup
-			</h1>
-			<h2 className="font-semibold">
-				Model:
-			</h2>
-			<Select value={selectedModel} onValueChange={setSelectedModel}>
-				<SelectTrigger className="w-[180px]">
-					<SelectValue placeholder="Select a model" />
-				</SelectTrigger>
-				<SelectContent>
-					<SelectGroup>
-						<SelectLabel>Models</SelectLabel>
-						<SelectItem value="google/gemini-2.5-flash">gemini-2.5-flash</SelectItem>
-						<SelectItem value="anthropic/claude-haiku-4.5">claude-haiku-4.5</SelectItem>
-						<SelectItem value="openai/gpt-5-mini">gpt-5-mini</SelectItem>
-					</SelectGroup>
-				</SelectContent>
-			</Select>
-			<h2 className="font-semibold">
-				System Prompt:
-			</h2>
-			<Textarea
-				placeholder="System prompt for your Notion agent"
-				value={systemPrompt}
-				onChange={(e) => setSystemPrompt(e.target.value)}
-			/>
-			<h2 className="font-semibold">
-				Tool Providers:
-			</h2>
-			<div className="flex gap-2">
-				<Toggle size="sm"
-					variant="outline"
-					className="data-[state=on]:bg-blue-100 flex gap-1"
-					onClick={() => toggleProvider(ProviderType.ACTIONKIT)}>
-					<CirclePlus />
-					<div>ActionKit</div>
-				</Toggle>
-				<Toggle size="sm"
-					variant="outline"
-					className="data-[state=on]:bg-blue-100 flex gap-1"
-					onClick={() => toggleProvider(ProviderType.COMPOSIO)}>
-					<CirclePlus />
-					<div>Composio</div>
-				</Toggle>
-				<Toggle size="sm"
-					variant="outline"
-					className="data-[state=on]:bg-blue-100 flex gap-1"
-					onClick={() => toggleProvider(ProviderType.MCP)}>
-					<CirclePlus />
-					<div>Notion MCP</div>
-				</Toggle>
-			</div>
-			{Object.keys(provider).filter((prov) => provider[prov]).length > 0 &&
-				<>
-					<h2 className="font-semibold">
-						Tools:
-					</h2>
-					<Tabs defaultValue={Object.keys(provider).filter((prov) => provider[prov])[0]}>
-						<TabsList>
+			flex flex-col justify-between p-4 gap-2 overflow-y-auto">
+			<div>
+				<h1 className="font-bold text-xl">
+					Harrness Setup
+				</h1>
+				<h2 className="font-semibold">
+					Model:
+				</h2>
+				<Select value={selectedModel} onValueChange={setSelectedModel}>
+					<SelectTrigger className="w-[180px]">
+						<SelectValue placeholder="Select a model" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectGroup>
+							<SelectLabel>Models</SelectLabel>
+							<SelectItem value="google/gemini-2.5-flash">gemini-2.5-flash</SelectItem>
+							<SelectItem value="anthropic/claude-haiku-4.5">claude-haiku-4.5</SelectItem>
+							<SelectItem value="openai/gpt-5-mini">gpt-5-mini</SelectItem>
+						</SelectGroup>
+					</SelectContent>
+				</Select>
+				<h2 className="font-semibold">
+					System Prompt:
+				</h2>
+				<Textarea
+					placeholder="System prompt for your Notion agent"
+					value={systemPrompt}
+					onChange={(e) => setSystemPrompt(e.target.value)}
+				/>
+				<h2 className="font-semibold">
+					Tool Providers:
+				</h2>
+				<div className="flex gap-2">
+					<Toggle size="sm"
+						variant="outline"
+						className="data-[state=on]:bg-blue-100 flex gap-1"
+						pressed={provider["ActionKit"]}
+						onClick={() => toggleProvider(ProviderType.ACTIONKIT)}>
+						<CirclePlus />
+						<div>ActionKit</div>
+					</Toggle>
+					<Toggle size="sm"
+						variant="outline"
+						className="data-[state=on]:bg-blue-100 flex gap-1"
+						pressed={provider["Composio"]}
+						onClick={() => toggleProvider(ProviderType.COMPOSIO)}>
+						<CirclePlus />
+						<div>Composio</div>
+					</Toggle>
+					<Toggle size="sm"
+						variant="outline"
+						className="data-[state=on]:bg-blue-100 flex gap-1"
+						pressed={provider["MCP"]}
+						onClick={() => toggleProvider(ProviderType.MCP)}>
+						<CirclePlus />
+						<div>Notion MCP</div>
+					</Toggle>
+				</div>
+				{Object.keys(provider).filter((prov) => provider[prov]).length > 0 &&
+					<>
+						<h2 className="font-semibold">
+							Tools:
+						</h2>
+						<Tabs defaultValue={Object.keys(provider).filter((prov) => provider[prov])[0]}>
+							<TabsList>
+								{Object.keys(provider).filter((prov) => provider[prov]).map((prov) => {
+									return (
+										<TabsTrigger value={prov} key={prov}>
+											{prov}
+										</TabsTrigger>
+									);
+								})}
+							</TabsList>
 							{Object.keys(provider).filter((prov) => provider[prov]).map((prov) => {
+								let toolNames: string[] = [];
+								if (prov === ProviderType.ACTIONKIT) toolNames = ACTIONKIT_NOTION_TOOLS;
+								if (prov === ProviderType.COMPOSIO) toolNames = COMPOSIO_NOTION_TOOLS;
+								if (prov === ProviderType.MCP) toolNames = MCP_NOTION_TOOLS;
+
 								return (
-									<TabsTrigger value={prov} key={prov}>
-										{prov}
-									</TabsTrigger>
+									<TabsContent value={prov} key={prov}>
+										<div className="rounded-md bg-muted p-4 grid grid-cols-2 overflow-y-auto
+										h-36 gap-2">
+											{toolNames.map((tool) => {
+												return (
+													<Toggle key={tool}
+														size="sm"
+														variant="outline"
+														className="data-[state=on]:bg-green-100 flex gap-1"
+														pressed={tools[prov].has(tool)}
+														onClick={() => toggleTool(prov, tool)}>
+														<Wrench />
+														<div className="overflow-x-hidden">
+															{tool}
+														</div>
+													</Toggle>
+												);
+											})}
+										</div>
+									</TabsContent>
 								);
 							})}
-						</TabsList>
-						{Object.keys(provider).filter((prov) => provider[prov]).map((prov) => {
-							let toolNames: string[] = [];
-							if (prov === ProviderType.ACTIONKIT) toolNames = ACTIONKIT_NOTION_TOOLS;
-							if (prov === ProviderType.COMPOSIO) toolNames = COMPOSIO_NOTION_TOOLS;
-							if (prov === ProviderType.MCP) toolNames = MCP_NOTION_TOOLS;
-
-							return (
-								<TabsContent value={prov} key={prov}>
-									<div className="rounded-md bg-muted p-4 grid grid-cols-2 overflow-y-auto
-										h-36 gap-2">
-										{toolNames.map((tool) => {
-											return (
-												<Toggle key={tool}
-													size="sm"
-													variant="outline"
-													className="data-[state=on]:bg-green-100 flex gap-1"
-													pressed={tools[prov].has(tool)}
-													onClick={() => toggleTool(prov, tool)}>
-													<Wrench />
-													<div className="overflow-x-hidden">
-														{tool}
-													</div>
-												</Toggle>
-											);
-										})}
-									</div>
-								</TabsContent>
-							);
-						})}
-					</Tabs>
-				</>
-			}
-			<Button className="w-20"
-				onClick={() => finishSetup()}>
-				Finished
-			</Button>
+						</Tabs>
+					</>
+				}
+			</div>
+			<div className="flex gap-2">
+				<Button className="w-20"
+					onClick={() => finishSetup()}>
+					Finished
+				</Button>
+				<Button className="w-20" variant={"outline"}
+					onClick={() => toggle()}>
+					Cancel
+				</Button>
+			</div>
 		</div>
 	);
 }

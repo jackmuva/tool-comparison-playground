@@ -42,23 +42,26 @@ export const getHarnessConfig = async (email: string): Promise<HarnessConfig | n
 	return null;
 }
 
-export const insertHarnessConfig = async (user: string, systemPrompt: string, tools: ToolConfig) => {
+export const insertHarnessConfig = async (user: string, model: string, systemPrompt: string, tools: ToolConfig): Promise<HarnessConfig | null> => {
 	try {
 		const harness = await getHarnessConfig(user);
 		if (harness) {
-			await db.update(harnessConfigTable).set({
+			return (await db.update(harnessConfigTable).set({
 				user: user,
+				model: model,
 				systemPrompt: systemPrompt,
 				tools: tools,
-			});
+			}).returning())[0];
 		} else {
-			await db.insert(harnessConfigTable).values({
+			return (await db.insert(harnessConfigTable).values({
 				user: user,
+				model: model,
 				systemPrompt: systemPrompt,
 				tools: tools,
-			});
+			}).returning())[0];
 		}
 	} catch (e) {
 		console.error(e);
 	}
+	return null;
 }

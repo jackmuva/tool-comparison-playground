@@ -1,0 +1,1 @@
+ALTER TABLE `harness_config_table` ADD `model` text;

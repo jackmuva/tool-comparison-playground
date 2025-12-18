@@ -1,3 +1,5 @@
+"use server";
+
 import { UserInfo } from "@workos-inc/authkit-nextjs";
 import Navbar from "../navbar";
 import { HarnessConfig } from "@/src/db/schema";

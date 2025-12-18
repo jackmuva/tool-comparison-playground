@@ -12,6 +12,7 @@ export type User = typeof usersTable.$inferSelect;
 export const harnessConfigTable = sqliteTable("harness_config_table", {
 	id: text().$defaultFn(() => crypto.randomUUID()).notNull(),
 	user: text().references(() => usersTable.email),
+	model: text(),
 	systemPrompt: text(),
 	tools: text({ mode: "json" }).$type<ToolConfig>(),
 });

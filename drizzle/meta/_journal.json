@@ -15,6 +15,13 @@
       "when": 1764792623260,
       "tag": "0001_bent_venom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1764962229341,
+      "tag": "0002_aberrant_hercules",
+      "breakpoints": true
     }
   ]
 }
