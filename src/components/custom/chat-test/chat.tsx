@@ -15,8 +15,11 @@ export function Chat({
 	harnessConfig: HarnessConfig | null,
 	user: { userInfo: UserInfo, paragonUserToken: string }
 }) {
-	const { setupModal, setSetupModal, setConfig, config, } = useTestingStore((state) => state);
+	const { setupModal, setSetupModal, setConfig, config, chatReady } = useTestingStore((state) => state);
 	const [chatTypes, setChatTypes] = useState<Set<string>>(new Set());
+	const [input, setInput] = useState('');
+	const [allReady, setAllReady] = useState<boolean>(false);
+	const [submittingMessage, setSubmittingMessage] = useState<boolean>(false);
 
 	useEffect(() => {
 		if (harnessConfig) {
@@ -26,7 +29,7 @@ export function Chat({
 		else {
 			setSetupModal(true);
 		}
-	}, [harnessConfig])
+	}, [harnessConfig]);
 
 	useEffect(() => {
 		if (!config) return;
@@ -35,8 +38,21 @@ export function Chat({
 			if (config.tools![prov].length > 0) newChatTypes.add(prov);
 		}
 		setChatTypes(newChatTypes);
-	}, [config])
-	console.log(chatTypes.size);
+	}, [config]);
+
+	useEffect(() => {
+		let newAllReady = true;
+		for (const prov of Object.keys(chatReady)) {
+			if (!chatReady[prov]) {
+				newAllReady = false;
+				break;
+			}
+		}
+		if (newAllReady = true) {
+			setSubmittingMessage(false);
+		}
+		setAllReady(newAllReady);
+	}, [chatReady])
 
 	return (
 		<div className="pt-20 flex flex-col gap-4 justify-start items-center ">
@@ -52,7 +68,7 @@ export function Chat({
 				<div className="flex flex-col sm:flex-row gap-4 w-full py-4">
 					{chatTypes.has("ActionKit") &&
 						<div className="flex-1">
-							<ActionKitChat user={user} />
+							<ActionKitChat user={user} chatInput={input} submittingMessage={submittingMessage} />
 						</div>}
 					{chatTypes.has("Composio") &&
 						<div className="flex-1">
@@ -61,6 +77,23 @@ export function Chat({
 							</div>
 						</div>}
 				</div>
+				<form onSubmit={e => {
+					e.preventDefault();
+					if (input.trim()) {
+						setInput('');
+					}
+					setSubmittingMessage(true);
+				}} className="flex gap-1 w-full justify-between" >
+					<input value={input}
+						onChange={e => setInput(e.target.value)}
+						disabled={!allReady}
+						className="outline p-1 rounded-sm grow"
+						placeholder="Say something..."
+					/>
+					<Button type="submit" disabled={!allReady}>
+						Submit
+					</Button>
+				</form>
 			</div>
 		</div >
 	);

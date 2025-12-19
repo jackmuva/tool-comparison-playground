@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import useParagon from "@/src/hooks/useParagon";
 import { UserInfo } from "@workos-inc/authkit-nextjs";
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -9,7 +8,7 @@ import { useEffect } from "react";
 import { useTestingStore } from "@/src/store/testing-store";
 import { ProviderType } from "./harness-setup";
 
-export const ActionKitChat = ({
+export const ComposioChat = ({
 	user,
 	chatInput,
 	submittingMessage,
@@ -19,19 +18,18 @@ export const ActionKitChat = ({
 	submittingMessage: boolean,
 
 }) => {
-	const { paragonConnect } = useParagon(user.paragonUserToken);
 	const { messages, sendMessage, status } = useChat({
 		transport: new DefaultChatTransport({
-			api: '/api/chat/actionkit',
+			api: '/api/chat/composio',
 		}),
 	});
 	const { setChatReady } = useTestingStore((state) => state);
 
 	useEffect(() => {
 		if (status !== "ready") {
-			setChatReady(ProviderType.ACTIONKIT, false);
+			setChatReady(ProviderType.COMPOSIO, false);
 		} else {
-			setChatReady(ProviderType.ACTIONKIT, true);
+			setChatReady(ProviderType.COMPOSIO, true);
 		}
 	}, [status]);
 
@@ -43,7 +41,7 @@ export const ActionKitChat = ({
 	return (
 		<div className="w-full flex flex-col gap-4 p-4 rounded-sm border ">
 			<h1 className="text-2xl">
-				ActionKit Harness
+				Composio Harness
 			</h1>
 			<div className="max-h-48 overflow-y-auto w-full rounded-sm border p-2 flex flex-col
 				gap-2 items-center">
@@ -51,7 +49,11 @@ export const ActionKitChat = ({
 					<div>
 						Notion
 					</div>
-					<Button size={"sm"} onClick={() => paragonConnect?.connect("notion", {})}>
+					<Button size={"sm"} onClick={async () => {
+						await fetch(`${window.origin}/api/composio/auth`, {
+							method: "GET",
+						});
+					}}>
 						Connect
 					</Button>
 				</div>

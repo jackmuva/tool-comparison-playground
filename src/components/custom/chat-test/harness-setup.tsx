@@ -16,7 +16,7 @@ import {
 import { useTestingStore } from "@/src/store/testing-store";
 import { HarnessConfig } from "@/src/db/schema";
 
-enum ProviderType {
+export enum ProviderType {
 	ACTIONKIT = "ActionKit",
 	COMPOSIO = "Composio",
 	MCP = "MCP",
