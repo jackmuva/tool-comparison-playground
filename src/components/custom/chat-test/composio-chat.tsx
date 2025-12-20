@@ -7,6 +7,7 @@ import { DefaultChatTransport } from 'ai';
 import { useEffect } from "react";
 import { useTestingStore } from "@/src/store/testing-store";
 import { ProviderType } from "./harness-setup";
+import useSWR from 'swr'
 
 export const ComposioChat = ({
 	user,
@@ -18,12 +19,16 @@ export const ComposioChat = ({
 	submittingMessage: boolean,
 
 }) => {
+	const { setChatReady, config } = useTestingStore((state) => state);
 	const { messages, sendMessage, status } = useChat({
 		transport: new DefaultChatTransport({
 			api: '/api/chat/composio',
+			body: {
+				model: config?.model,
+				systemPrompt: config?.systemPrompt
+			},
 		}),
 	});
-	const { setChatReady } = useTestingStore((state) => state);
 
 	useEffect(() => {
 		if (status !== "ready") {
@@ -37,6 +42,13 @@ export const ComposioChat = ({
 		if (submittingMessage) sendMessage({ text: chatInput });
 	}, [submittingMessage]);
 
+	const { data: url, error, isLoading } = useSWR(`composio/${user.userInfo.user.id}`, async () => {
+		const res: Response = await fetch(`${window.location.origin}/api/composio/auth`, {
+			method: "GET"
+		});
+
+		return (await res.json()).url;
+	});
 
 	return (
 		<div className="w-full flex flex-col gap-4 p-4 rounded-sm border ">
@@ -49,13 +61,11 @@ export const ComposioChat = ({
 					<div>
 						Notion
 					</div>
-					<Button size={"sm"} onClick={async () => {
-						await fetch(`${window.origin}/api/composio/auth`, {
-							method: "GET",
-						});
-					}}>
-						Connect
-					</Button>
+					<a href={url} target="_blank">
+						<Button size={"sm"} disabled={isLoading}>
+							Connect
+						</Button>
+					</a>
 				</div>
 			</div>
 			<div className="flex flex-col gap-4">

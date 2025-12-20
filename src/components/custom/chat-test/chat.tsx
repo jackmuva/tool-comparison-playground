@@ -7,6 +7,7 @@ import { HarnessSetup } from "./harness-setup";
 import { Button } from "@/components/ui/button";
 import { UserInfo } from "@workos-inc/authkit-nextjs";
 import { ActionKitChat } from "./actionkit-chat";
+import { ComposioChat } from "./composio-chat";
 
 export function Chat({
 	harnessConfig,
@@ -49,6 +50,7 @@ export function Chat({
 			}
 		}
 		if (newAllReady = true) {
+			setInput('');
 			setSubmittingMessage(false);
 		}
 		setAllReady(newAllReady);
@@ -72,17 +74,14 @@ export function Chat({
 						</div>}
 					{chatTypes.has("Composio") &&
 						<div className="flex-1">
-							<div className="w-full flex flex-col gap-4 p-4 rounded-sm border ">
-								placeholder
-							</div>
+							<ComposioChat user={user} chatInput={input} submittingMessage={submittingMessage} />
 						</div>}
 				</div>
 				<form onSubmit={e => {
 					e.preventDefault();
 					if (input.trim()) {
-						setInput('');
+						setSubmittingMessage(true);
 					}
-					setSubmittingMessage(true);
 				}} className="flex gap-1 w-full justify-between" >
 					<input value={input}
 						onChange={e => setInput(e.target.value)}

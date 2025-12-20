@@ -120,7 +120,6 @@ export function HarnessSetup({
 			const newTools = { ...tools };
 			const newProvider = { ...provider }
 			for (const prov of Object.keys(config.tools ?? {})) {
-				console.log("prov: ", config.tools![prov]);
 				newProvider[prov] = config.tools![prov].length > 0 ? true : false;
 				for (const toolName of config.tools![prov]) {
 					newTools[prov].add(toolName);

@@ -20,12 +20,17 @@ export const ActionKitChat = ({
 
 }) => {
 	const { paragonConnect } = useParagon(user.paragonUserToken);
+	const { setChatReady, config } = useTestingStore((state) => state);
 	const { messages, sendMessage, status } = useChat({
 		transport: new DefaultChatTransport({
 			api: '/api/chat/actionkit',
+			body: {
+				model: config?.model,
+				systemPrompt: config?.systemPrompt
+			},
 		}),
+
 	});
-	const { setChatReady } = useTestingStore((state) => state);
 
 	useEffect(() => {
 		if (status !== "ready") {
@@ -36,7 +41,9 @@ export const ActionKitChat = ({
 	}, [status]);
 
 	useEffect(() => {
-		if (submittingMessage) sendMessage({ text: chatInput });
+		if (submittingMessage) {
+			sendMessage({ text: chatInput });
+		}
 	}, [submittingMessage]);
 
 
