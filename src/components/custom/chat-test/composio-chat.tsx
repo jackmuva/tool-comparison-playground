@@ -25,7 +25,8 @@ export const ComposioChat = ({
 			api: '/api/chat/composio',
 			body: {
 				model: config?.model,
-				systemPrompt: config?.systemPrompt
+				systemPrompt: config?.systemPrompt,
+				tools: config?.tools,
 			},
 		}),
 	});

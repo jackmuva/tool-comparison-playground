@@ -26,7 +26,8 @@ export const ActionKitChat = ({
 			api: '/api/chat/actionkit',
 			body: {
 				model: config?.model,
-				systemPrompt: config?.systemPrompt
+				systemPrompt: config?.systemPrompt,
+				tools: config?.tools,
 			},
 		}),
 
