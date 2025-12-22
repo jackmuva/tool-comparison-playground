@@ -8,6 +8,7 @@ import { DefaultChatTransport } from 'ai';
 import { useEffect } from "react";
 import { useTestingStore } from "@/src/store/testing-store";
 import { ProviderType } from "./harness-setup";
+import useSWR from "swr";
 
 export const ActionKitChat = ({
 	user,
@@ -19,6 +20,19 @@ export const ActionKitChat = ({
 	submittingMessage: boolean,
 
 }) => {
+	const { data: tools, isLoading: toolsAreLoading } = useSWR(`actionkit/tools`, async () => {
+		const response = await fetch(
+			`https://actionkit.useparagon.com/projects/${process.env.NEXT_PUBLIC_PARAGON_PROJECT_ID}/actions`,
+			{
+				headers: {
+					Authorization: `Bearer ${user.paragonUserToken}`,
+				},
+			},
+		);
+		const data = await response.json();
+		return data.actions;
+	});
+
 	const { paragonConnect } = useParagon(user.paragonUserToken);
 	const { setChatReady, config } = useTestingStore((state) => state);
 	const { messages, sendMessage, status } = useChat({
@@ -27,11 +41,14 @@ export const ActionKitChat = ({
 			body: {
 				model: config?.model,
 				systemPrompt: config?.systemPrompt,
-				tools: config?.tools,
+				toolConfig: config?.tools,
+				tools: tools
 			},
 		}),
 
 	});
+
+	console.log("tools: ", tools);
 
 	useEffect(() => {
 		if (status !== "ready") {
@@ -76,7 +93,6 @@ export const ActionKitChat = ({
 						</div>
 					))}
 				</div>
-
 			</div>
 		</div>
 	);

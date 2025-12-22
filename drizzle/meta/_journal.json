@@ -22,6 +22,13 @@
       "when": 1764962229341,
       "tag": "0002_aberrant_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1766296349390,
+      "tag": "0003_special_wong",
+      "breakpoints": true
     }
   ]
 }

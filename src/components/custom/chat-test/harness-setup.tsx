@@ -1,3 +1,5 @@
+"use client";
+
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/components/ui/tabs";

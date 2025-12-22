@@ -1,16 +1,84 @@
+import { ProviderType } from '@/src/components/custom/chat-test/harness-setup';
+import { userWithToken } from '@/src/lib/auth';
 import { ToolConfig } from '@/src/types/types';
-import { convertToModelMessages, streamText, UIMessage } from 'ai';
+import { validateUIMessages, UIMessage, tool, jsonSchema } from 'ai';
+import { Experimental_Agent as Agent } from 'ai';
+import { NextResponse } from 'next/server';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-	const { messages, model, systemPrompt, tools }: { messages: UIMessage[], model: string, systemPrompt: string, tools: ToolConfig } = await req.json();
+	const user = await userWithToken();
 
-	const result = streamText({
+	if (!user.userInfo) {
+		return NextResponse.json({
+			statusCode: 401
+		})
+	}
+
+	const { messages, model, systemPrompt, toolConfig, tools }: { messages: UIMessage[], model: string, systemPrompt: string, toolConfig: ToolConfig, tools: any } = await req.json();
+	console.log("tools", tools);
+
+	const selectedTools = Object.fromEntries(
+		Object.keys(tools).flatMap((integration) => {
+			return tools[integration]?.map((
+				toolFunction: {
+					type: string,
+					function: {
+						name: string,
+						description: string,
+						parameters: any
+					}
+				}
+			) => {
+				if (toolConfig["ActionKit"].includes(toolFunction.function.name)) {
+					return [toolFunction.function.name, tool({
+						description: toolFunction.function.description,
+						inputSchema: jsonSchema(toolFunction.function.parameters),
+						execute: async (params: any) => {
+							console.log(`EXECUTING TOOL: ${toolFunction.function.name}`);
+							console.log(`Tool params:`, params);
+							try {
+								const response = await fetch(
+									`https://actionkit.useparagon.com/projects/${process.env.NEXT_PUBLIC_PARAGON_PROJECT_ID}/actions`,
+									{
+										method: "POST",
+										body: JSON.stringify({
+											action: toolFunction.function.name,
+											parameters: params,
+										}),
+										headers: {
+											Authorization: `Bearer ${user.paragonUserToken}`,
+											"Content-Type": "application/json",
+										},
+									}
+								);
+								const output = await response.json();
+								if (!response.ok) {
+									throw new Error(JSON.stringify(output, null, 2));
+								}
+								return output;
+							} catch (err) {
+								if (err instanceof Error) {
+									return { error: { message: err.message } };
+								}
+								return err;
+							}
+						}
+					})];
+				}
+			}) || []
+		})
+	)
+	console.log(selectedTools);
+
+	const actionKitAgent = new Agent({
 		model: model,
 		system: systemPrompt,
-		messages: convertToModelMessages(messages),
+		tools: selectedTools
 	});
 
-	return result.toUIMessageStreamResponse();
+	return actionKitAgent.respond({
+		messages: await validateUIMessages({ messages }),
+	});
 }
