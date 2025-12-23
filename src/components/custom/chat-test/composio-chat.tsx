@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { UserInfo } from "@workos-inc/authkit-nextjs";
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTestingStore } from "@/src/store/testing-store";
 import { ProviderType } from "./harness-setup";
 import useSWR from 'swr'
 import { ChatMessage } from "./chat-message";
+import { MetricsPanel } from "./metrics-panel";
 
 export const ComposioChat = ({
 	user,
@@ -43,7 +44,8 @@ export const ComposioChat = ({
 		runningOutput: 0,
 		lastInput: 0,
 		lastOutput: 0,
-	})
+	});
+	const messageWindowRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		if (messages.length > 0) {
@@ -76,6 +78,12 @@ export const ComposioChat = ({
 		if (submittingMessage) sendMessage({ text: chatInput });
 	}, [submittingMessage]);
 
+	useEffect(() => {
+		if (messageWindowRef.current) {
+			messageWindowRef.current.scrollTop = messageWindowRef.current.scrollHeight;
+		}
+	}, [messages]);
+
 	const { data: url, error, isLoading } = useSWR(`composio/${user.userInfo.user.id}`, async () => {
 		const res: Response = await fetch(`${window.location.origin}/api/composio/auth`, {
 			method: "GET"
@@ -84,10 +92,8 @@ export const ComposioChat = ({
 		return (await res.json()).url;
 	});
 
-	console.log(messages);
-
 	return (
-		<div className="w-full flex flex-col gap-4 p-4 rounded-sm border ">
+		<div className="w-full flex flex-col gap-4 p-4 rounded-sm border overflow-hidden">
 			<h1 className="text-2xl">
 				Composio Harness
 			</h1>
@@ -104,10 +110,12 @@ export const ComposioChat = ({
 					</a>
 				</div>
 			</div>
-			<div className="rounded-sm bg-muted-foreground/10 overflow-y-auto h-96
-					p-2">
+			<MetricsPanel usage={usage} />
+			<div ref={messageWindowRef}
+				className="rounded-sm bg-muted-foreground/5 overflow-y-auto h-96
+					p-2 overflow-x-hidden w-full">
 				{messages.map(message => (
-					<div key={message.id} className="whitespace-pre-wrap">
+					<div key={message.id} className="whitespace-pre-wrap overflow-hidden flex flex-col">
 						{message.parts.map((part, i) => {
 							return <ChatMessage key={`${message.id}-${i}`}
 								message={message}

@@ -5,11 +5,11 @@ import useParagon from "@/src/hooks/useParagon";
 import { UserInfo } from "@workos-inc/authkit-nextjs";
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTestingStore } from "@/src/store/testing-store";
 import { ProviderType } from "./harness-setup";
-import useSWR from "swr";
 import { ChatMessage } from "./chat-message";
+import { MetricsPanel } from "./metrics-panel";
 
 export const ActionKitChat = ({
 	user,
@@ -37,8 +37,40 @@ export const ActionKitChat = ({
 		}),
 
 	});
+	const [usage, setUsage] = useState<{
+		runningTotal: number,
+		runningInput: number,
+		runningOutput: number,
+		lastInput: number,
+		lastOutput: number
+	}>({
+		runningTotal: 0,
+		runningInput: 0,
+		runningOutput: 0,
+		lastInput: 0,
+		lastOutput: 0,
+	})
+	const messageWindowRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
+		if (messages.length > 0) {
+			const usage: {
+				cachedInputTokens: number,
+				inputTokens: number,
+				outputTokens: number,
+				reasoningTokens: number,
+				totalTokens: number,
+			} | undefined = (messages.at(-1)?.metadata as any)?.totalUsage;
+			if (usage) {
+				setUsage((prev) => ({
+					runningTotal: prev.runningTotal + usage.totalTokens,
+					runningInput: prev.runningInput + usage.inputTokens,
+					runningOutput: prev.runningOutput + usage.outputTokens,
+					lastInput: usage.inputTokens,
+					lastOutput: usage.outputTokens,
+				}));
+			}
+		}
 		if (status !== "ready") {
 			setChatReady(ProviderType.ACTIONKIT, false);
 		} else {
@@ -52,9 +84,14 @@ export const ActionKitChat = ({
 		}
 	}, [submittingMessage]);
 
+	useEffect(() => {
+		if (messageWindowRef.current) {
+			messageWindowRef.current.scrollTop = messageWindowRef.current.scrollHeight;
+		}
+	}, [messages]);
 
 	return (
-		<div className="w-full flex flex-col gap-4 p-4 rounded-sm border ">
+		<div className="w-full flex flex-col gap-4 p-4 rounded-sm border overflow-hidden">
 			<h1 className="text-2xl">
 				ActionKit Harness
 			</h1>
@@ -69,12 +106,12 @@ export const ActionKitChat = ({
 					</Button>
 				</div>
 			</div>
-			<div className="flex flex-col gap-4">
-				<div className="rounded-sm bg-muted-foreground/10 overflow-y-auto h-96
-					p-2">
-
+			<MetricsPanel usage={usage} />
+			<div className="flex flex-col gap-4 max-w-full w-full overflow-hidden">
+				<div ref={messageWindowRef}
+					className="rounded-sm bg-muted-foreground/5 overflow-y-auto h-96 p-2 overflow-x-hidden w-full">
 					{messages.map(message => (
-						<div key={message.id} className="whitespace-pre-wrap">
+						<div key={message.id} className="whitespace-pre-wrap overflow-hidden flex flex-col">
 							{message.parts.map((part, i) => {
 								return <ChatMessage key={`${message.id}-${i}`}
 									message={message}

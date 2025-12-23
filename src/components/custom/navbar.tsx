@@ -8,7 +8,7 @@ export default async function Navbar({
 	userInfo: UserInfo
 }) {
 	return (
-		<div className="absolute left-0 top-0 border-b h-16 flex w-full items-center px-4 justify-between">
+		<div className="sticky bg-background left-0 top-0 border-b h-16 flex w-full items-center px-4 justify-between">
 			<h1 className="text-xl font-bold flex gap-1">
 				<Hammer size={25} />
 				<div>Tool Evaluation Playground</div>
