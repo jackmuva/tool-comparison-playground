@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { UserInfo } from "@workos-inc/authkit-nextjs";
 import { ActionKitChat } from "./actionkit-chat";
 import { ComposioChat } from "./composio-chat";
+import useSWR from "swr";
 
 export function Chat({
 	harnessConfig,
@@ -56,6 +57,20 @@ export function Chat({
 		setAllReady(newAllReady);
 	}, [chatReady])
 
+	const { data: actionKitTools, isLoading: actionKitToolsLoading } = useSWR(chatTypes.has("ActionKit") ? `actionkit/tools` : null,
+		async () => {
+			const response = await fetch(
+				`https://actionkit.useparagon.com/projects/${process.env.NEXT_PUBLIC_PARAGON_PROJECT_ID}/actions`,
+				{
+					headers: {
+						Authorization: `Bearer ${user.paragonUserToken}`,
+					},
+				},
+			);
+			const data = await response.json();
+			return data.actions;
+		});
+
 	return (
 		<div className="pt-20 flex flex-col gap-4 justify-start items-center ">
 			{setupModal && <HarnessSetup toggle={() => setSetupModal(false)}
@@ -68,9 +83,9 @@ export function Chat({
 					</Button>
 				</div>
 				<div className="flex flex-col sm:flex-row gap-4 w-full py-4">
-					{chatTypes.has("ActionKit") &&
+					{chatTypes.has("ActionKit") && !actionKitToolsLoading && actionKitTools &&
 						<div className="flex-1">
-							<ActionKitChat user={user} chatInput={input} submittingMessage={submittingMessage} />
+							<ActionKitChat user={user} chatInput={input} submittingMessage={submittingMessage} tools={actionKitTools} />
 						</div>}
 					{chatTypes.has("Composio") &&
 						<div className="flex-1">

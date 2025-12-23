@@ -14,24 +14,13 @@ export const ActionKitChat = ({
 	user,
 	chatInput,
 	submittingMessage,
+	tools,
 }: {
 	user: { userInfo: UserInfo, paragonUserToken: string },
 	chatInput: string,
 	submittingMessage: boolean,
-
+	tools: any,
 }) => {
-	const { data: tools, isLoading: toolsAreLoading } = useSWR(`actionkit/tools`, async () => {
-		const response = await fetch(
-			`https://actionkit.useparagon.com/projects/${process.env.NEXT_PUBLIC_PARAGON_PROJECT_ID}/actions`,
-			{
-				headers: {
-					Authorization: `Bearer ${user.paragonUserToken}`,
-				},
-			},
-		);
-		const data = await response.json();
-		return data.actions;
-	});
 
 	const { paragonConnect } = useParagon(user.paragonUserToken);
 	const { setChatReady, config } = useTestingStore((state) => state);
