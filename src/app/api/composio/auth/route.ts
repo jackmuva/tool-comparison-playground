@@ -1,10 +1,9 @@
 import { withAuth } from "@workos-inc/authkit-nextjs";
 import { NextResponse } from "next/server";
-import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
-import { redirect } from 'next/navigation'
+import { ComposioService } from "@/src/lib/composio";
 
 const NOTION_AUTH_CONFIG_ID = "ac_bIhdNG-H-8b8";
+
 export async function GET() {
 	const user = await withAuth();
 	if (!user.user) {
@@ -13,20 +12,15 @@ export async function GET() {
 		})
 	}
 	try {
-		const composio = new Composio({
-			apiKey: process.env.COMPOSIO_API_KEY!,
-			provider: new VercelProvider(),
-		});
-
 		const externalUserId = user.user.id;
 
-
-		const connectionRequest = await composio.connectedAccounts.link(
+		const connectionRequest = await ComposioService.connectedAccounts.link(
 			externalUserId,
 			NOTION_AUTH_CONFIG_ID,
 		);
 
 		const redirectUrl = connectionRequest.redirectUrl;
+
 		if (redirectUrl) {
 			return NextResponse.json({ url: redirectUrl });
 		} else {

@@ -52,7 +52,6 @@ export async function POST(req: Request) {
 									}
 								);
 								const output = await response.json();
-								console.log("tool output:", output);
 								if (!response.ok) {
 									throw new Error(JSON.stringify(output, null, 2));
 								}
