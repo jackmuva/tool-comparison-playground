@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { useTestingStore } from "@/src/store/testing-store";
 import { ProviderType } from "./harness-setup";
 import useSWR from "swr";
+import { ChatMessage } from "./chat-message";
 
 export const ActionKitChat = ({
 	user,
@@ -36,8 +37,6 @@ export const ActionKitChat = ({
 		}),
 
 	});
-
-	console.log("tools: ", tools);
 
 	useEffect(() => {
 		if (status !== "ready") {
@@ -73,12 +72,14 @@ export const ActionKitChat = ({
 			<div className="flex flex-col gap-4">
 				<div className="rounded-sm bg-muted-foreground/10 overflow-y-auto h-96
 					p-2">
+
 					{messages.map(message => (
-						<div key={message.id}>
-							{message.role === 'user' ? 'User: ' : 'AI: '}
-							{message.parts.map((part, index) =>
-								part.type === 'text' ? <span key={index}>{part.text}</span> : null,
-							)}
+						<div key={message.id} className="whitespace-pre-wrap">
+							{message.parts.map((part, i) => {
+								return <ChatMessage key={`${message.id}-${i}`}
+									message={message}
+									part={part} />
+							})}
 						</div>
 					))}
 				</div>

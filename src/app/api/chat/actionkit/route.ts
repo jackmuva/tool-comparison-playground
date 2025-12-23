@@ -1,11 +1,10 @@
-import { ProviderType } from '@/src/components/custom/chat-test/harness-setup';
 import { userWithToken } from '@/src/lib/auth';
 import { ToolConfig } from '@/src/types/types';
-import { validateUIMessages, UIMessage, tool, jsonSchema } from 'ai';
+import { validateUIMessages, UIMessage, tool, jsonSchema, stepCountIs } from 'ai';
 import { Experimental_Agent as Agent } from 'ai';
 import { NextResponse } from 'next/server';
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
 	const user = await userWithToken();
@@ -17,7 +16,6 @@ export async function POST(req: Request) {
 	}
 
 	const { messages, model, systemPrompt, toolConfig, tools }: { messages: UIMessage[], model: string, systemPrompt: string, toolConfig: ToolConfig, tools: any } = await req.json();
-	console.log("tools", tools);
 
 	const selectedTools = Object.fromEntries(
 		Object.keys(tools).flatMap((integration) => {
@@ -54,6 +52,7 @@ export async function POST(req: Request) {
 									}
 								);
 								const output = await response.json();
+								console.log("tool output:", output);
 								if (!response.ok) {
 									throw new Error(JSON.stringify(output, null, 2));
 								}
@@ -67,15 +66,19 @@ export async function POST(req: Request) {
 						}
 					})];
 				}
-			}) || []
+			})
+				.filter((toolSchema: undefined | Array<any>) => {
+					return toolSchema ? true : false
+				})
+				|| []
 		})
 	)
-	console.log(selectedTools);
 
 	const actionKitAgent = new Agent({
 		model: model,
 		system: systemPrompt,
-		tools: selectedTools
+		tools: selectedTools,
+		stopWhen: stepCountIs(5),
 	});
 
 	return actionKitAgent.respond({
