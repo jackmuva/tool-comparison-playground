@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { UserInfo } from "@workos-inc/authkit-nextjs";
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTestingStore } from "@/src/store/testing-store";
 import { ProviderType } from "./harness-setup";
 import useSWR from 'swr'
@@ -31,8 +31,40 @@ export const ComposioChat = ({
 			},
 		}),
 	});
+	const [usage, setUsage] = useState<{
+		runningTotal: number,
+		runningInput: number,
+		runningOutput: number,
+		lastInput: number,
+		lastOutput: number
+	}>({
+		runningTotal: 0,
+		runningInput: 0,
+		runningOutput: 0,
+		lastInput: 0,
+		lastOutput: 0,
+	})
 
 	useEffect(() => {
+		if (messages.length > 0) {
+			const usage: {
+				cachedInputTokens: number,
+				inputTokens: number,
+				outputTokens: number,
+				reasoningTokens: number,
+				totalTokens: number,
+			} | undefined = (messages.at(-1)?.metadata as any)?.totalUsage;
+			if (usage) {
+				setUsage((prev) => ({
+					runningTotal: prev.runningTotal + usage.totalTokens,
+					runningInput: prev.runningInput + usage.inputTokens,
+					runningOutput: prev.runningOutput + usage.outputTokens,
+					lastInput: usage.inputTokens,
+					lastOutput: usage.outputTokens,
+				}));
+			}
+		}
+
 		if (status !== "ready") {
 			setChatReady(ProviderType.COMPOSIO, false);
 		} else {
@@ -72,20 +104,17 @@ export const ComposioChat = ({
 					</a>
 				</div>
 			</div>
-			<div className="flex flex-col gap-4">
-				<div className="rounded-sm bg-muted-foreground/10 overflow-y-auto h-96
+			<div className="rounded-sm bg-muted-foreground/10 overflow-y-auto h-96
 					p-2">
-					{messages.map(message => (
-						<div key={message.id} className="whitespace-pre-wrap">
-							{message.parts.map((part, i) => {
-								return <ChatMessage key={`${message.id}-${i}`}
-									message={message}
-									part={part} />
-							})}
-						</div>
-					))}
-				</div>
-
+				{messages.map(message => (
+					<div key={message.id} className="whitespace-pre-wrap">
+						{message.parts.map((part, i) => {
+							return <ChatMessage key={`${message.id}-${i}`}
+								message={message}
+								part={part} />
+						})}
+					</div>
+				))}
 			</div>
 		</div>
 	);
