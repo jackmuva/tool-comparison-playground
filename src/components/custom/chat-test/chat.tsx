@@ -9,6 +9,7 @@ import { UserInfo } from "@workos-inc/authkit-nextjs";
 import { ActionKitChat } from "./actionkit-chat";
 import { ComposioChat } from "./composio-chat";
 import useSWR from "swr";
+import { McpChat } from "./mcp-chat";
 
 export function Chat({
 	harnessConfig,
@@ -91,6 +92,10 @@ export function Chat({
 					{chatTypes.has("Composio") &&
 						<div className="flex-1">
 							<ComposioChat user={user} chatInput={input} submittingMessage={submittingMessage} clearId={clearId} />
+						</div>}
+					{chatTypes.has("MCP") &&
+						<div className="flex-1">
+							<McpChat user={user} chatInput={input} submittingMessage={submittingMessage} clearId={clearId} />
 						</div>}
 				</div>
 				<form onSubmit={e => {
