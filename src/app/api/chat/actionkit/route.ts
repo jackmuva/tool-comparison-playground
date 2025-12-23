@@ -1,6 +1,6 @@
 import { userWithToken } from '@/src/lib/auth';
 import { ToolConfig } from '@/src/types/types';
-import { validateUIMessages, UIMessage, tool, jsonSchema, stepCountIs } from 'ai';
+import { validateUIMessages, UIMessage, tool, jsonSchema, stepCountIs, streamText, convertToModelMessages } from 'ai';
 import { Experimental_Agent as Agent } from 'ai';
 import { NextResponse } from 'next/server';
 
@@ -73,14 +73,22 @@ export async function POST(req: Request) {
 		})
 	)
 
-	const actionKitAgent = new Agent({
+	const result = streamText({
 		model: model,
 		system: systemPrompt,
+		messages: convertToModelMessages(messages),
 		tools: selectedTools,
 		stopWhen: stepCountIs(5),
 	});
 
-	return actionKitAgent.respond({
-		messages: await validateUIMessages({ messages }),
+	return result.toUIMessageStreamResponse({
+		originalMessages: messages,
+		messageMetadata: ({ part }) => {
+			if (part.type === 'finish') {
+				return {
+					totalUsage: part.totalUsage,
+				};
+			}
+		},
 	});
 }

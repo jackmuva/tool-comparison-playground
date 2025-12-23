@@ -52,6 +52,8 @@ export const ComposioChat = ({
 		return (await res.json()).url;
 	});
 
+	console.log(messages);
+
 	return (
 		<div className="w-full flex flex-col gap-4 p-4 rounded-sm border ">
 			<h1 className="text-2xl">
