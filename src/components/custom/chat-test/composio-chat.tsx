@@ -15,14 +15,15 @@ export const ComposioChat = ({
 	user,
 	chatInput,
 	submittingMessage,
+	clearId,
 }: {
 	user: { userInfo: UserInfo, paragonUserToken: string },
 	chatInput: string,
 	submittingMessage: boolean,
-
+	clearId: string | null,
 }) => {
 	const { setChatReady, config } = useTestingStore((state) => state);
-	const { messages, sendMessage, status } = useChat({
+	const { messages, sendMessage, status, setMessages: setChatMessages } = useChat({
 		transport: new DefaultChatTransport({
 			api: '/api/chat/composio',
 			body: {
@@ -73,6 +74,19 @@ export const ComposioChat = ({
 			setChatReady(ProviderType.COMPOSIO, true);
 		}
 	}, [status]);
+
+	useEffect(() => {
+		if (clearId) {
+			setChatMessages([]);
+			setUsage({
+				runningTotal: 0,
+				runningInput: 0,
+				runningOutput: 0,
+				lastInput: 0,
+				lastOutput: 0,
+			});
+		}
+	}, [clearId]);
 
 	useEffect(() => {
 		if (submittingMessage) sendMessage({ text: chatInput });

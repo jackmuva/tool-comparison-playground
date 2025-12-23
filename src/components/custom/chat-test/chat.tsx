@@ -22,6 +22,7 @@ export function Chat({
 	const [input, setInput] = useState('');
 	const [allReady, setAllReady] = useState<boolean>(false);
 	const [submittingMessage, setSubmittingMessage] = useState<boolean>(false);
+	const [clearId, setClearId] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (harnessConfig) {
@@ -85,18 +86,15 @@ export function Chat({
 				<div className="flex flex-col sm:flex-row gap-4 w-full py-4">
 					{chatTypes.has("ActionKit") && !actionKitToolsLoading && actionKitTools &&
 						<div className="flex-1">
-							<ActionKitChat user={user} chatInput={input} submittingMessage={submittingMessage} tools={actionKitTools} />
+							<ActionKitChat user={user} chatInput={input} submittingMessage={submittingMessage} tools={actionKitTools} clearId={clearId} />
 						</div>}
 					{chatTypes.has("Composio") &&
 						<div className="flex-1">
-							<ComposioChat user={user} chatInput={input} submittingMessage={submittingMessage} />
+							<ComposioChat user={user} chatInput={input} submittingMessage={submittingMessage} clearId={clearId} />
 						</div>}
 				</div>
 				<form onSubmit={e => {
 					e.preventDefault();
-					if (input.trim()) {
-						setSubmittingMessage(true);
-					}
 				}} className="flex gap-1 w-full justify-between" >
 					<input value={input}
 						onChange={e => setInput(e.target.value)}
@@ -104,8 +102,21 @@ export function Chat({
 						className="outline p-1 rounded-sm grow"
 						placeholder="Say something..."
 					/>
-					<Button type="submit" disabled={!allReady}>
+					<Button type="submit" disabled={!allReady}
+						onClick={() => {
+							if (input.trim()) {
+								setSubmittingMessage(true);
+							}
+						}}>
 						Submit
+					</Button>
+					<Button variant={"destructive"}
+						onClick={() => {
+							setClearId(crypto.randomUUID());
+							setInput('');
+							setSubmittingMessage(false);
+						}}>
+						Clear/New Task
 					</Button>
 				</form>
 			</div>
