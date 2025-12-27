@@ -10,6 +10,38 @@ import { ProviderType } from "./harness-setup";
 import useSWR from 'swr'
 import { ChatMessage } from "./chat-message";
 import { MetricsPanel } from "./metrics-panel";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import {
+	NotificationSchema as BaseNotificationSchema,
+	ClientNotificationSchema,
+	ServerNotificationSchema,
+	Result,
+} from "@modelcontextprotocol/sdk/types.js";
+import type { SchemaOutput } from "@modelcontextprotocol/sdk/server/zod-compat.js";
+import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import {
+	SSEClientTransport,
+	SseError,
+	SSEClientTransportOptions,
+} from "@modelcontextprotocol/sdk/client/sse.js";
+import {
+	StreamableHTTPClientTransport,
+	StreamableHTTPClientTransportOptions,
+} from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+
+export const NotificationSchema = ClientNotificationSchema.or(
+	ServerNotificationSchema,
+).or(BaseNotificationSchema);
+
+export type Notification = SchemaOutput<typeof NotificationSchema>;
+
+export interface CustomHeader {
+	name: string;
+	value: string;
+	enabled: boolean;
+}
+
+export type CustomHeaders = CustomHeader[];
 
 export const McpChat = ({
 	user,
@@ -98,13 +130,111 @@ export const McpChat = ({
 		}
 	}, [messages]);
 
-	const { data: url, error, isLoading } = useSWR(`composio/${user.userInfo.user.id}`, async () => {
-		const res: Response = await fetch(`${window.location.origin}/api/composio/auth`, {
-			method: "GET"
-		});
 
-		return (await res.json()).url;
-	});
+	//NOTE:MCP LOGIC
+	const [mcpSessionId, setMcpSessionId] = useState<string | null>(null);
+
+	const captureResponseHeaders = (response: Response): void => {
+		const sessionId = response.headers.get("mcp-session-id");
+		const protocolVersion = response.headers.get("mcp-protocol-version");
+		if (sessionId && sessionId !== mcpSessionId) {
+			setMcpSessionId(sessionId);
+		}
+	}
+
+	const isEmptyAuthHeader = (header: CustomHeaders[number]) =>
+		header.name.trim().toLowerCase() === "authorization" &&
+		header.value.trim().toLowerCase() === "bearer";
+
+	const clientCapabilities = {
+		capabilities: {
+			sampling: {},
+			elicitation: {},
+			roots: {
+				listChanged: true,
+			},
+		},
+	};
+
+	const client = new Client<Request, Notification, Result>(
+		{ name: "tool-comparison", version: "0.1.0" },
+		clientCapabilities,
+	);
+
+	const transportType: string = "sse";
+	const headers: HeadersInit = {};
+	const requestHeaders = { ...headers };
+	let finalHeaders: CustomHeaders = [];
+
+	const needsOAuthToken = !finalHeaders.some(
+		(header) =>
+			header.enabled &&
+			header.name.trim().toLowerCase() === "authorization",
+	);
+
+	if (needsOAuthToken) {
+		console.log("[OAUTH] GETTING TOKEN");
+		const oauthToken = sessionStorage.getItem("NOTION_MCP_TOKEN");
+		console.log("[OAUTH] Access token: ", oauthToken);
+		if (oauthToken) {
+			// Add the OAuth token
+			finalHeaders = [
+				// Remove any existing Authorization headers with empty tokens
+				...finalHeaders.filter((header) => !isEmptyAuthHeader(header)),
+				{
+					name: "Authorization",
+					value: `Bearer ${oauthToken}`,
+					enabled: true,
+				},
+			];
+		}
+	}
+
+	let transportOptions:
+		| StreamableHTTPClientTransportOptions
+		| SSEClientTransportOptions;
+
+	let serverUrl: URL;
+	serverUrl = new URL("http://mcp.notion.com/sse");
+
+	if (mcpSessionId) {
+		requestHeaders["mcp-session-id"] = mcpSessionId;
+	}
+
+
+	requestHeaders["Accept"] = "text/event-stream";
+	requestHeaders["content-type"] = "application/json";
+	transportOptions = {
+		fetch: async (
+			url: string | URL | globalThis.Request,
+			init?: RequestInit,
+		) => {
+			const response = await fetch(url, {
+				...init,
+				headers: requestHeaders,
+			});
+
+			// Capture protocol-related headers from response
+			captureResponseHeaders(response);
+			return response;
+		},
+		requestInit: {
+			headers: requestHeaders,
+		},
+	};
+
+	const transport = transportType === "streamable-http"
+		? new StreamableHTTPClientTransport(serverUrl, {
+			sessionId: undefined,
+			...transportOptions,
+		})
+		: new SSEClientTransport(serverUrl, transportOptions);
+
+	const connectMcpServer = async () => {
+		console.log("[SERVER_URL]: ", serverUrl);
+		console.log("[TRANSPORT OPTIONS]: ", transportOptions);
+		await client.connect(transport as Transport);
+	}
 
 	return (
 		<div className="w-full flex flex-col gap-4 p-4 rounded-sm border overflow-hidden">
@@ -117,11 +247,9 @@ export const McpChat = ({
 					<div>
 						Notion
 					</div>
-					<a href={url} target="_blank">
-						<Button size={"sm"} disabled={isLoading}>
-							Connect
-						</Button>
-					</a>
+					<Button size={"sm"} onClick={async () => await connectMcpServer()}>
+						Connect
+					</Button>
 				</div>
 			</div>
 			<MetricsPanel usage={usage} />

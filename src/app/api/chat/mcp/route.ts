@@ -8,9 +8,7 @@ import { createMCPClient } from "@ai-sdk/mcp"
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { userWithToken } from '@/src/lib/auth';
 
-export const maxDuration = 30;
-
-const NOTION_MCP_URL = "https://mcp.notion.com/sse";
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
 	const user = await userWithToken();
@@ -22,21 +20,6 @@ export async function POST(req: Request) {
 	}
 
 	const { messages, model, systemPrompt, toolConfig }: { messages: UIMessage[], model: string, systemPrompt: string, toolConfig: ToolConfig } = await req.json();
-
-	const mcpClient = await createMCPClient({
-		transport: {
-			type: "sse",
-			url: NOTION_MCP_URL,
-			headers: {
-				"WWW-Authenticate": 'Bearer realm="mcp"',
-			}
-		}
-	});
-	console.log("mcp client: ", mcpClient);
-
-	const selectedTools = await mcpClient.tools();
-
-	console.log("[MCP] selected tools: ", selectedTools);
 
 	const result = streamText({
 		model: model,
