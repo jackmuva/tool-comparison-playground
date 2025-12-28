@@ -1,5 +1,5 @@
 import { ToolConfig } from '@/src/types/types';
-import { validateUIMessages, stepCountIs, UIMessage, streamText, convertToModelMessages } from 'ai';
+import { validateUIMessages, stepCountIs, UIMessage, streamText, convertToModelMessages, tool, jsonSchema } from 'ai';
 import { NextResponse } from 'next/server';
 import { userWithToken } from '@/src/lib/auth';
 import { StreamableHTTPClientTransportOptions } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -7,7 +7,7 @@ import { SSEClientTransport, SSEClientTransportOptions } from '@modelcontextprot
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { CustomHeaders, Notification } from '@/src/hooks/useMcpConnection';
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { ListToolsResultSchema, Result, ClientRequest } from "@modelcontextprotocol/sdk/types.js";
+import { ListToolsResultSchema, Result, ClientRequest, CompatibilityCallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js';
 
 const NOTION_MCP_URL = "https://mcp.notion.com/sse";
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
 	const metadata = lastUserMessage?.metadata as any;
 
 	const mcpToken = metadata.mcpToken;
+	console.log("mcpToken: ", mcpToken);
 
 	let transportOptions:
 		| StreamableHTTPClientTransportOptions
@@ -132,16 +133,47 @@ export async function POST(req: Request) {
 		mcpRequestOptions,
 	);
 
-	console.log("tool list: ", tools);
+	const selectedTools: { [name: string]: any } = {};
+	for (const itool of tools.tools) {
+		if (!toolConfig["MCP"].includes(itool.name)) continue;
+		selectedTools[itool.name] = tool({
+			description: itool.description,
+			inputSchema: jsonSchema(itool.inputSchema),
+			execute: async (params: any) => {
+				console.log(`EXECUTING TOOL: ${itool.name}`);
+				console.log(`Tool params:`, params);
+				try {
+					const callRequest: ClientRequest = {
+						method: "tools/call" as const,
+						params: {
+							name: itool.name,
+							arguments: params,
+						},
+					}
+					const res = await client.request(
+						callRequest,
+						CompatibilityCallToolResultSchema,
+						mcpRequestOptions,
+					);
+					console.log("Tool Response: ", res);
+					return res;
+				} catch (err) {
+					if (err instanceof Error) {
+						return { error: { message: err.message } };
+					}
+					return err;
 
-	const selectedTools = tools.tools;
+				}
+			},
+		})
+	}
 
 	const result = streamText({
 		model: model,
 		system: systemPrompt,
 		messages: convertToModelMessages(messages),
-		// tools: selectedTools,
-		stopWhen: stepCountIs(5),
+		tools: selectedTools,
+		stopWhen: stepCountIs(2),
 	});
 
 	return result.toUIMessageStreamResponse({

@@ -10,6 +10,7 @@ import { ProviderType } from "./harness-setup";
 import { ChatMessage } from "./chat-message";
 import { MetricsPanel } from "./metrics-panel";
 import { useMcpConnection } from "@/src/hooks/useMcpConnection";
+import { InspectorOAuthClientProvider } from "@/src/lib/mcp-auth";
 
 export const NOTION_MCP_URL = "https://mcp.notion.com/sse";
 
@@ -106,6 +107,16 @@ export const McpChat = ({
 			messageWindowRef.current.scrollTop = messageWindowRef.current.scrollHeight;
 		}
 	}, [messages]);
+
+	useEffect(() => {
+		const serverAuthProvider = new InspectorOAuthClientProvider(NOTION_MCP_URL);
+		serverAuthProvider.tokens().then((token) => {
+			const existingToken = token?.access_token;
+			if (existingToken) setOAuthToken(existingToken);
+		});
+	}, []);
+
+	console.log("mcpToken: ", oauthToken);
 
 	return (
 		<div className="w-full flex flex-col gap-4 p-4 rounded-sm border overflow-hidden">

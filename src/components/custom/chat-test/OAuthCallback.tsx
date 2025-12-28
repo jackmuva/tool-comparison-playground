@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { SESSION_KEYS } from "@/src/lib/mcp-auth";
 import { auth } from "@modelcontextprotocol/sdk/client/auth.js";
 import { InspectorOAuthClientProvider } from "@/src/lib/mcp-auth";
+import { redirect } from "next/navigation";
 
 type CallbackParams =
 	| {
@@ -147,6 +148,7 @@ const OAuthCallback = ({ onConnect }: OAuthCallbackProps) => {
 
 		handleCallback().finally(() => {
 			window.history.replaceState({}, document.title, "/");
+			redirect("/");
 		});
 	}, [onConnect]);
 
