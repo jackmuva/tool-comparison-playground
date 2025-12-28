@@ -124,12 +124,8 @@ export async function POST(req: Request) {
 
 	const mcpRequestOptions: RequestOptions = {
 		signal: abortController.signal,
-		// resetTimeoutOnProgress: resetRequestTimeoutOnProgress(config),
-		// timeout: options?.timeout ?? getMCPServerRequestTimeout(config),
-		// maxTotalTimeout:
-		// 	options?.maxTotalTimeout ??
-		// 	getMCPServerRequestMaxTotalTimeout(config),
 	};
+
 	const tools = await client.request(
 		requestWithMetadata,
 		ListToolsResultSchema,
@@ -137,6 +133,8 @@ export async function POST(req: Request) {
 	);
 
 	console.log("tool list: ", tools);
+
+	const selectedTools = tools.tools;
 
 	const result = streamText({
 		model: model,
