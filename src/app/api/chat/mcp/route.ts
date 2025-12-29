@@ -173,7 +173,7 @@ export async function POST(req: Request) {
 		system: systemPrompt,
 		messages: convertToModelMessages(messages),
 		tools: selectedTools,
-		stopWhen: stepCountIs(2),
+		stopWhen: stepCountIs(5),
 	});
 
 	return result.toUIMessageStreamResponse({

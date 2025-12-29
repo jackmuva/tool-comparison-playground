@@ -77,7 +77,7 @@ export function Chat({
 		<div className="pt-4 pb-20 flex flex-col gap-4 justify-start items-center ">
 			{setupModal && <HarnessSetup toggle={() => setSetupModal(false)}
 				config={config} />}
-			<div className="w-[1100px] max-w-11/12">
+			<div className="w-11/12">
 				<div className="w-full">
 					<Button onClick={() => setSetupModal(true)}
 						variant={"outline"}>

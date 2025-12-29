@@ -1,8 +1,7 @@
 import { ComposioService } from '@/src/lib/composio';
 import { ToolConfig } from '@/src/types/types';
 import { withAuth } from '@workos-inc/authkit-nextjs';
-import { validateUIMessages, stepCountIs, UIMessage, streamText, convertToModelMessages } from 'ai';
-import { Experimental_Agent as Agent } from 'ai';
+import { stepCountIs, UIMessage, streamText, convertToModelMessages } from 'ai';
 import { NextResponse } from 'next/server';
 
 export const maxDuration = 30;
@@ -21,8 +20,6 @@ export async function POST(req: Request) {
 	const selectedTools = await ComposioService.tools.get(user.user.id, {
 		tools: toolConfig["Composio"]
 	});
-
-	console.log("[Composio] selected tools: ", selectedTools);
 
 	const result = streamText({
 		model: model,

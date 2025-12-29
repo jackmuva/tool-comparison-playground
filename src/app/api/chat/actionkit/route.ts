@@ -30,46 +30,47 @@ export async function POST(req: Request) {
 				}
 			) => {
 				if (toolConfig["ActionKit"].includes(toolFunction.function.name)) {
-					return [toolFunction.function.name, tool({
-						description: toolFunction.function.description,
-						inputSchema: jsonSchema(toolFunction.function.parameters),
-						execute: async (params: any) => {
-							console.log(`EXECUTING TOOL: ${toolFunction.function.name}`);
-							console.log(`Tool params:`, params);
-							try {
-								const response = await fetch(
-									`https://actionkit.useparagon.com/projects/${process.env.NEXT_PUBLIC_PARAGON_PROJECT_ID}/actions`,
-									{
-										method: "POST",
-										body: JSON.stringify({
-											action: toolFunction.function.name,
-											parameters: params,
-										}),
-										headers: {
-											Authorization: `Bearer ${user.paragonUserToken}`,
-											"Content-Type": "application/json",
-										},
+					return [
+						toolFunction.function.name,
+						tool({
+							description: toolFunction.function.description,
+							inputSchema: jsonSchema(toolFunction.function.parameters),
+							execute: async (params: any) => {
+								console.log(`EXECUTING TOOL: ${toolFunction.function.name}`);
+								console.log(`Tool params:`, params);
+								try {
+									const response = await fetch(
+										`https://actionkit.useparagon.com/projects/${process.env.NEXT_PUBLIC_PARAGON_PROJECT_ID}/actions`,
+										{
+											method: "POST",
+											body: JSON.stringify({
+												action: toolFunction.function.name,
+												parameters: params,
+											}),
+											headers: {
+												Authorization: `Bearer ${user.paragonUserToken}`,
+												"Content-Type": "application/json",
+											},
+										}
+									);
+									const output = await response.json();
+									if (!response.ok) {
+										throw new Error(JSON.stringify(output, null, 2));
 									}
-								);
-								const output = await response.json();
-								if (!response.ok) {
-									throw new Error(JSON.stringify(output, null, 2));
+									return output;
+								} catch (err) {
+									if (err instanceof Error) {
+										return { error: { message: err.message } };
+									}
+									return err;
 								}
-								return output;
-							} catch (err) {
-								if (err instanceof Error) {
-									return { error: { message: err.message } };
-								}
-								return err;
 							}
-						}
-					})];
+						})
+					];
 				}
-			})
-				.filter((toolSchema: undefined | Array<any>) => {
-					return toolSchema ? true : false
-				})
-				|| []
+			}).filter((toolSchema: undefined | Array<any>) => {
+				return toolSchema ? true : false
+			}) || []
 		})
 	)
 
