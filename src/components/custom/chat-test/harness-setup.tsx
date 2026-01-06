@@ -189,7 +189,7 @@ export function HarnessSetup({
 					<SelectContent>
 						<SelectGroup>
 							<SelectLabel>Models</SelectLabel>
-							<SelectItem value="google/gemini-3.0-flash">gemini-3.0-flash</SelectItem>
+							<SelectItem value="google/gemini-3-flash">gemini-3-flash</SelectItem>
 							<SelectItem value="anthropic/claude-haiku-4.5">claude-haiku-4.5</SelectItem>
 							<SelectItem value="openai/gpt-5-mini">gpt-5-mini</SelectItem>
 						</SelectGroup>
